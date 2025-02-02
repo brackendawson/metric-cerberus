@@ -29,7 +29,7 @@ module vert_carriage(extrusion_width = 40, spacing = 2.5, curvature = 8)
   end_stop_block = 0;
   bearing_support_rad = 5;
   hull_offset = curvature-bearing_support_rad;
-  spring_tension = 1.5; // mm thinner than perfect
+  idler_gap = 3;
 
   difference() {
 
@@ -40,25 +40,25 @@ module vert_carriage(extrusion_width = 40, spacing = 2.5, curvature = 8)
           rotate([90,0,0]) cylinder(r=curvature, h = depth, center = true);
         translate([width/2-hull_offset, 0, 1*height/2])
           rotate([90,0,0]) cylinder(r=curvature, h = depth, center = true);
-      }
-      hull() {
-        translate([-14, 0, 1*(height/2)])
+        translate([-10, 0, -1*height/3])
           rotate([90,0,0]) cylinder(r=curvature, h = depth, center = true);
-        translate([width/2-hull_offset, 0, 1*height/2])
+        translate([-10, 0, 1*height/2])
           rotate([90,0,0]) cylinder(r=curvature, h = depth, center = true);
       }
-      translate([-width/2+hull_offset+spring_tension, 0, 0])
-        rotate([90,0,0]) cylinder(r=curvature, h = depth, center = true);
-      // the spring
-      hull() {
-        translate([width/2-hull_offset, 0, -1*height/2-curvature+2])
-          rotate([90,0,0]) cylinder(r=2, h = depth, center = true);
-        translate([-width/2+hull_offset+spring_tension, 0, -curvature+2])
-          rotate([90,0,0]) cylinder(r=2, h = depth, center = true);
+      // body idler
+      difference() {
+        hull() {
+          translate([-width/2+hull_offset, 0, -1*height/4])
+            rotate([90,0,0]) cylinder(r=curvature, h = depth, center = true);
+          translate([-width/2+hull_offset, 0, 1*height/4])
+            rotate([90,0,0]) cylinder(r=curvature, h = depth, center = true);
+        }
+        // cut out idler's body
+        translate([-10-curvature-idler_gap,-depth,-height]) cube([width,depth,2*height]);
       }
 
       // bearing supports
-      for (t = [[-1*hole_offset+spring_tension, 0, 0],
+      for (t = [[-1*hole_offset, 0, 0],
                 [hole_offset, vert_hole_offset*.5, 0],
                 [hole_offset, vert_hole_offset*-.5, 0]]) {
         translate([0, 1, 0])
@@ -77,10 +77,27 @@ module vert_carriage(extrusion_width = 40, spacing = 2.5, curvature = 8)
       }
     }
 
-    if (end_stop_screw_hole_diameter != 0) {
-      // end stop screw hole
-      translate([0,-8.5, 28])
-        cylinder(r=3.5/2, h = 10, center = true, $fn=10);
+    // cut out middle
+    hull() {
+      for (t = [[width/2-12, 0, 15], [-10+3/2, 0, 15],
+                [width/2-12, 0, -22], [-10+3/2, 0, -16.5]]) {
+        translate(t)
+          rotate([90, 0, 0]) cylinder(r=3, h=depth+10, center = true);
+      }
+    }
+    // cut out idler's features
+    translate([-10-curvature-idler_gap,-depth,-height]) cube([idler_gap,depth,2*height]);
+
+    // idler screws
+    for (t = [
+        [0,-2-4,-1*height/4+3/2],
+        [0,-2-4,1*height/4-3/2],
+      ]) {
+
+      translate(t) rotate([0,-90,0]) {
+        cylinder(r=3/2, h=width, $fn=10);
+        cylinder(r=(6.01+1)/2, h=10+3/2+2.15, $fn=6);
+      }
     }
 
     // filament/bracket screw
@@ -93,7 +110,7 @@ module vert_carriage(extrusion_width = 40, spacing = 2.5, curvature = 8)
 
     // clear middle bottom
     translate([0, 18, -14])
-      cube([20, extrusion_width, height-14], center = true);
+      cube([20, extrusion_width, height], center = true);
 
     // clear extrusion curves
     for (x=[
@@ -110,9 +127,9 @@ module vert_carriage(extrusion_width = 40, spacing = 2.5, curvature = 8)
         [-center_width/2-4,12+10,height+curvature],
       ],
       [
-        [-extrusion_width/2+4-spacing+spring_tension,12+10,-height+curvature],
+        [-extrusion_width/2+4-spacing,12+10,-height+curvature],
         [-center_width/2-4,12-10,-height+curvature],
-        [-extrusion_width/2+4-spacing+spring_tension,12-10,-height+curvature],
+        [-extrusion_width/2+4-spacing,12-10,-height+curvature],
         [-center_width/2-4,12+10,-height+curvature],
       ],
     ]) {
@@ -125,7 +142,7 @@ module vert_carriage(extrusion_width = 40, spacing = 2.5, curvature = 8)
     }
 
     // bearing holes
-    for (t = [[-1*hole_offset+spring_tension, layer_height+3, 0 ],
+    for (t = [[-1*hole_offset, layer_height+3, 0 ],
               [hole_offset, layer_height+3, vert_hole_offset*.5],
               [hole_offset, layer_height+3, vert_hole_offset*-.5]]) {
       translate(t) rotate([90, 0, 0])
@@ -133,7 +150,7 @@ module vert_carriage(extrusion_width = 40, spacing = 2.5, curvature = 8)
     }
 
     // bearing holes sink heads
-    for (t = [[-1*hole_offset+spring_tension, -depth/2+1.49, 0],
+    for (t = [[-1*hole_offset, -depth/2+1.49, 0],
               [hole_offset, -depth/2+1.49, vert_hole_offset*.5],
               [hole_offset, -depth/2+1.49, vert_hole_offset*-.5]]) {
       translate(t) rotate([90, 0, 0])
